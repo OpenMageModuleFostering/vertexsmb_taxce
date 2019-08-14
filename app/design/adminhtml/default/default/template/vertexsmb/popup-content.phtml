@@ -1,35 +1,40 @@
 <?php 
 /**
+ * @category    VertexSMB
  * @package     VertexSMB_TaxCE
+ * @author      Alex Lukyanau <alukyanau@netatwork.com>
  * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
- * @author      Alex Lukyanau
+ * @link        http://www.magentocommerce.com/magento-connect/sales-tax-extension-for-vertex-smb-1.html
  */
 ?>
-<?php $tax_area_responses = $this->getResponse(); ?>
-<?php $tax_area_responses_array=$tax_area_responses->TaxAreaResponse->TaxAreaResult; ?> 
+<?php $responseCollection=$this->getItemsCollection(); ?> 
+<?php $firstItem=$this->getFirstItem();?>
+<?php $isMultiple=$this->getIsMultiple();?>
 <div  class="selectaddress-container step a-item" >
     <div lass="col1-set">
-        
-            <h3><?php echo $this->__('Please verify your address'); ?></h3>          
-            <ul class="form-list">
-                 <li class="control"><?php echo $this->__('Your shipping address may be updated according to selection'); ?></li>
-                 <?php foreach ($tax_area_responses_array as $tax_response): ?>                   
-                    <li class="control">
-                        <input type="radio" class="radio" id="tax_area_id_<?php echo $tax_response->taxAreaId; ?>"  value="<?php echo $tax_response->taxAreaId; ?>"   name="tax_area_id">
-                        <?php
-                            $tax_jurisdictions=$tax_response->Jurisdiction; 
-                            krsort($tax_jurisdictions);                             
-                            $area_names=array();
-                            foreach ($tax_jurisdictions as $area_jursdiction )
-                                $area_names[]=$area_jursdiction->_;
-                      
-                              $area_name=implode(', ', $area_names);                          
-                        ?>
-                        <label for="tax_area_id_<?php echo $tax_response->taxAreaId; ?>"><?php echo ucwords(strtolower($area_name)); ?></label>  
-                        <input type="hidden" name="city_<?php echo $tax_response->taxAreaId; ?>" id="tax_city_<?php echo $tax_response->taxAreaId; ?>" value="<?php echo $tax_response->PostalAddress->City; ?>" />
-                    </li>                    
-                <?php endforeach; ?>
-            </ul>
+            <?php if ($isMultiple): ?>
+                <h3><?php echo $this->__('Please verify your address'); ?></h3>          
+                <ul class="form-list">
+                     <li class="control"><?php echo $this->__('Your shipping address may be updated according to selection'); ?></li>
+                          <?php foreach ($responseCollection as $taxResponse): ?>                   
+                            <li class="control">
+                                <input type="radio" class="radio" id="tax_area_id_<?php echo $taxResponse->getTaxAreaId(); ?>"  value="<?php echo $taxResponse->getTaxAreaId(); ?>"   name="tax_area_id">                         
+                                <label for="tax_area_id_<?php echo $taxResponse->getTaxAreaId(); ?>"><?php echo $this->escapeHtml($taxResponse->getAreaName()); ?></label>  
+                                <input type="hidden" name="city_<?php echo $this->escapeHtml($taxResponse->getTaxAreaId()); ?>" id="tax_city_<?php echo $this->escapeHtml($taxResponse->getTaxAreaId()); ?>" value="<?php echo $this->escapeHtml($taxResponse->getTaxAreaCity()); ?>" />
+                            </li>                    
+                        <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <h3><?php echo $this->__('Your shipping address has been updated'); ?></h3>          
+                <ul class="form-list">                                 
+                        <li class="control">                         
+                            <label><?php echo $this->__('Original City: %s', $this->escapeHtml($firstItem->getRequestCity())); ?></label>  
+                        </li>    
+                        <li class="control">                         
+                            <label><?php echo $this->__('Validated City: %s',$this->escapeHtml($firstItem->getTaxAreaCity())); ?></label>  
+                        </li>                                           
+                </ul>                    
+            <?php endif;?>
             <div class="buttons-set">
                 <p class="required">&nbsp;</p>
                 <button onclick="javascript:void(0);" class="button" type="button" id="select-tax-area-button"><span><span><?php echo $this->__('Continue'); ?></span></span></button>
@@ -44,16 +49,22 @@
     $('select-tax-area-button').observe('click', select_address);
         
     function select_address(){
+    	<?php if ($isMultiple):?>
         var tax_area_id=$$('input:checked[type="radio"][name="tax_area_id"]').pluck('value');
+        <?php else:?>
+        var tax_area_id="<?php echo $firstItem->getTaxAreaId(); ?>";
+        <?php endif;?>
         if (tax_area_id=="undefined" || tax_area_id.length==0) {
             alert('Please select address');
             return false;
         }
+        <?php if ($isMultiple):?>
         var new_city=$('tax_city_'+tax_area_id).value;
-         
+        <?php else:?>
+        var new_city="<?php echo $this->escapeHtml($firstItem->getTaxAreaCity()); ?>";
+        <?php endif;?>                        
         $('select-tax-area-id').style.display = "none";
         $('popup-shadow').style.display = "none"; 
- 
  
         var request = new Ajax.Request(
           '<?php echo Mage::getUrl('*/vertexSMB/saveTaxArea');?>' ,
@@ -62,12 +73,10 @@
                onComplete: SelectAddressComplete,                  
                parameters: {tax_area_id:tax_area_id, new_city:new_city}
             }
-        );  
-       /* console.log(tax_area_id);  */       
+        );   
     }    
     
     function SelectAddressComplete(){
          order.loadArea(['totals','shipping_address'], true, {} );     
-    }
-    
+    }    
 </script>

@@ -1,8 +1,10 @@
 <?php 
 /**
+ * @category    VertexSMB
  * @package     VertexSMB_TaxCE
+ * @author      Alex Lukyanau <alukyanau@netatwork.com>
  * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
- * @author      Alex Lukyanau
+ * @link        http://www.magentocommerce.com/magento-connect/sales-tax-extension-for-vertex-smb-1.html
  */
 ?>
 <?php if (Mage::helper('taxce')->IsVertexSMBActive()): ?>
@@ -18,9 +20,7 @@
     <div id="order-tax-area-load"></div> 
 </div>
 <div id="popup-shadow" class="bg-shadow">&nbsp;</div>
-   <script type="text/javascript"> 
-    
-   
+   <script type="text/javascript">        
     order.loadArea= function(area, indicator, params){
         var url = this.loadBaseUrl;
         if (area) {
@@ -33,8 +33,7 @@
         if (!this.loadingAreas) this.loadingAreas = [];
         
         if (indicator) {
-            this.loadingAreas = area;
-            
+            this.loadingAreas = area;            
             new Ajax.Request(url, {
                 parameters:params,
                 loaderArea: indicator,
@@ -44,8 +43,7 @@
                      
                 }.bind(this),
                 
-                onComplete:  function() {  
-                          /*console.log(params['order[billing_address][city]']); */
+                onComplete:  function() {                             
                         if ( ( typeof area === 'string' &&  area!='header' && area!='totals' ) ||
                                 ( typeof area === 'object' && area[0]!='totals' &&  area[0]!='header' )  || 
                                 (typeof params['order[billing_address][city]']!='undefined' || typeof params['order[shipping_address][city]']!='undefined')  )  
@@ -55,9 +53,7 @@
         }
         else {
             new Ajax.Request(url, {parameters:params,loaderArea: indicator, 
-                onComplete: function() { 
-                     
-                           /* Add more handlers to update tax area depend of parameters shipping & billing*/             
+                onComplete: function() {                              
                    if ( ( typeof area === 'string' &&  area!='header' && area!='totals' ) ||
                                 ( typeof area === 'object' && area[0]!='totals' &&  area[0]!='header' ) ||
                                 (typeof params['order[billing_address][city]']!='undefined' || typeof params['order[shipping_address][city]']!='undefined')  )  {                    
@@ -72,23 +68,19 @@
             productConfigure.clean('quote_items');
         }
     }
-    
-    
+        
    function getTaxAreaId(params){      
        var request = new Ajax.Request(
-                    '<?php echo Mage::getUrl('*/vertexSMB/TaxArea');?>' ,
+                    '<?php echo Mage::getUrl('*/vertexSMB/taxArea');?>' ,
                       {
-                         method:'post',
-                         /* onComplete: SelectAddressComplete, */
+                         method:'post',                        
                          onSuccess: SelectAddressSucess,                   
                          parameters: params
                       }
-                  );  
-        
+                  );          
    }
     
-   function SelectAddressSucess(transport){
-      
+   function SelectAddressSucess(transport){      
          if (transport && transport.responseText){
             try{
                 response = eval('(' + transport.responseText + ')');
@@ -97,26 +89,19 @@
                 response = {};
             }
         }
-
         if (response.error){
             if ((typeof response.message) == 'string') {         	     
             	alert(response.message);                
             } else {                                
                 alert(response.message.join("\n"));                
             }
-
             return false;
         }
-        if (response.message=='show_popup') {
-        
-            $('order-tax-area-load').update(response.html);
-        
+        if (response.message=='show_popup') {        
+            $('order-tax-area-load').update(response.html);        
         } else {
            order.loadArea(['totals','shipping_address'], true, {} );
-        }
-         
-   }
-    
-    
+        }         
+   }        
 </script>
 <?php endif; ?>
