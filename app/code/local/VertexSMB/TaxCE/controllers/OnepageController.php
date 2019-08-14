@@ -162,6 +162,13 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
     }
     
     public function saveTaxAreaId($address){
+        
+        /*Other Countries*/
+        if ($address->getCountryId()!='USA') {
+            return true;   
+        }
+        /*Other Countries*/
+        
          $TaxAreaModel=Mage::getModel('taxce/TaxAreaRequest');
          $request_result=$TaxAreaModel->prepareRequest($address)->taxAreaLookup();
          $address_changed=false;

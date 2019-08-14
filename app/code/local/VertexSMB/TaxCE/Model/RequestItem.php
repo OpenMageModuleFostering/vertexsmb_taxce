@@ -29,10 +29,12 @@
               'documentDate'=>$this->getDocumentDate(),
               'postingDate'=>$this->getPostingDate(),
               'transactionType'=>$this->getTransactionType(),
-              'documentNumber' => $this->getDocumentNumber(), 
-              'LineItem'=> array() 
+              'documentNumber' => $this->getDocumentNumber(),               
+              'LineItem'=> array(),
+               
               )   
           );
+        
         if ($this->getDocumentNumber())
             $request[$this->getRequestType()]['documentNumber']=$this->getDocumentNumber();
         
@@ -49,13 +51,14 @@
         $i=1; /* lineItemNumber */
         foreach($items as $key=>$item){                              
             /* $key - quote_item_id */
-            $tmp_item=array('lineItemNumber'=>$i,'lineItemId'=>$key, 'locationCode'=>$this->getLocationCode(),
+            $tmp_item=array('lineItemNumber'=>$i,'lineItemId'=>$key,  'locationCode'=>$this->getLocationCode(),
                  'Seller'=> array (
                      'Company'=> $this->getCompanyId(),
                      'PhysicalOrigin'=>array(
                         'StreetAddress1'=>$this->getData('company_street_1'),
                         'StreetAddress2'=>$this->getData('company_street_2'),
                         'City'=>$this->getCompanyCity(),
+                        'Country'=>$this->getCompanyCountry(),
                         'MainDivision'=>$this->getCompanyState(),      
                         'PostalCode'=>$this->getCompanyPostcode())
                      ),  
@@ -66,14 +69,19 @@
                                             'StreetAddress2'=>$this->getCustomerStreet2(),
                                             'City'=>$this->getCustomerCity(),
                                             'MainDivision'=>$this->getCustomerRegion(),                                        
-                                            'PostalCode'=>$this->getCustomerPostcode())
-                                          
+                                            'PostalCode'=>$this->getCustomerPostcode(),
+                                            'Country'=> $this->getCustomerCountry(),
+                                          ),
                                     ),
                  'Product' => array ('productClass'=>$item['product_class'],'_'=>$item['product_code']),
                  'UnitPrice' => array('_'=>$item['price']),
                  'Quantity' => array('_'=>$item['qty']),
                  'ExtendedPrice'=> array('_'=>$item['extended_price']),
                  ); 
+          
+             
+            if ($this->getCustomerCountry()=='CAN')
+                $tmp_item['deliveryTerm']='SUP';
             
             if ($this->getTaxAreaId())
                 $tmp_item['Customer']['Destination']['taxAreaId']=$this->getTaxAreaId();

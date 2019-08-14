@@ -44,7 +44,7 @@ class VertexSMB_TaxCE_Model_Tax_Sales_Total_Quote_Tax extends Mage_Tax_Model_Sal
            return $this;           
        }
        
-       if (!$address->getCountryId() || !$address->getRegionId() || !$address->getPostcode()  || !count($address->getAllNonNominalItems()))  {
+       if (!$address->getCountryId() || !$address->getRegion() || !$address->getPostcode()  || !count($address->getAllNonNominalItems()))  {
             Mage_Sales_Model_Quote_Address_Total_Abstract::collect($address);
             Mage::log("Quote request was not sent. Address not specified. ", null, 'vertexsmb.log');
            return $this;

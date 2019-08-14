@@ -27,6 +27,9 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
     public function getCompanyCity(){
         return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::CONFIG_XML_PATH_VERTEX_CITY, Mage::app()->getStore()->getId());       
     }       
+    public function getCompanyCountry(){
+        return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::CONFIG_XML_PATH_VERTEX_COUNTRY, Mage::app()->getStore()->getId());
+    }
     public function getCompanyRegionId(){
         return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::CONFIG_XML_PATH_VERTEX_REGION, Mage::app()->getStore()->getId());       
     }
@@ -167,7 +170,9 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
             return "Not Valid: Missing Trusted Id";
          if (!$this->getCompanyRegionId()) 
             return "Not Valid: Missing Company State";
-         if (!$this->getCompanyStreet1()) 
+         if (!$this->getCompanyCountry())
+             return "Not Valid: Missing Company Country";         
+         if (!$this->getCompanyStreet1())             
             return "Not Valid: Missing Company Street Address";
          if (!$this->getCompanyCity()) 
             return "Not Valid: Missing Company City";   
@@ -175,8 +180,15 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
             return "Not Valid: Missing Company Postal Code";             
          
          $region_id=$this->getCompanyRegionId();
-         $regionModel = Mage::getModel('directory/region')->load($region_id);
-         $company_state=$regionModel->getCode();   
+         if (is_int($region_id)) {
+             $regionModel = Mage::getModel('directory/region')->load($region_id);
+             $company_state=$regionModel->getCode();
+         } else {
+             $company_state=$region_id;
+         }         
+         
+         $countryModel=Mage::getModel('directory/country')->load($this->getCompanyCountry());
+         $countryName = $countryModel->getIso3Code();
          
          /*Admin API verification*/
          $address=new Varien_Object();
@@ -186,7 +198,9 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
          $address->setRegionCode($company_state);
          $address->setPostcode($this->getCompanyPostalCode());
                                              
-         
+        if ($countryName!='USA')
+            return "Valid";
+        
         $request_result=Mage::getModel('taxce/TaxAreaRequest')->prepareRequest($address)->taxAreaLookup();
         if ($request_result instanceof Exception) {            
             return "Address Validation Error: Please check settings";
@@ -199,9 +213,16 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
    public function AddSellerInformation($data){      
     
        $region_id=$this->getCompanyRegionId();
-       $regionModel = Mage::getModel('directory/region')->load($region_id);
-       $company_state=$regionModel->getCode();        
+       if (is_int($region_id)) {
+            $regionModel = Mage::getModel('directory/region')->load($region_id);
+            $company_state=$regionModel->getCode();
+       } else {
+           $company_state=$region_id;
+       }        
              
+       $countryModel=Mage::getModel('directory/country')->load($this->getCompanyCountry());
+       $countryName = $countryModel->getIso3Code();
+       
        $data['location_code']=$this->getLocationCode();      
        $data['transaction_type']=$this->getTransactionType();
        $data['company_id']=$this->getCompanyCode();
@@ -210,6 +231,9 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
        $data['company_city']=$this->getCompanyCity();
        $data['company_state']=$company_state;
        $data['company_postcode']=$this->getCompanyPostalCode();
+        
+       $data['company_country'] =$countryName;
+       
        $data['trusted_id']= $this->getTrustedId();        
        
        return $data;
@@ -220,7 +244,12 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         $data['customer_street2'] = $address->getStreet2();
         $data['customer_city'] = $address->getCity();
         $data['customer_region'] = $address->getRegionCode();       
-        $data['customer_postcode'] = $address->getPostcode();        
+        $data['customer_postcode'] = $address->getPostcode();
+                
+        $countryModel=Mage::getModel('directory/country')->load($address->getCountryId());        
+        $countryName = $countryModel->getIso3Code();        
+        $data['customer_country'] =$countryName;
+        
         $data['tax_area_id'] = $address->getTaxAreaId();
         return $data;
     }

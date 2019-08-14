@@ -39,7 +39,7 @@ class VertexSMB_TaxCE_Helper_Config extends Mage_Core_Helper_Abstract {
     const VERTEX_PRINTED_GIFTCARD_CODE='tax/classes/printed_giftcard_code'; 
     const CONFIG_XML_PATH_VERTEX_ALLOW_CART_QUOTE = 'tax/vertexsmb_settings/allow_cart_request';
     const CONFIG_XML_PATH_VERTEX_SHOW_MANUAL_BUTTON = 'tax/vertexsmb_settings/show_manual_button';
-   const CONFIG_XML_PATH_VERTEX_SHOW_POPUP= 'tax/vertexsmb_settings/show_tarequest_popup';
+    const CONFIG_XML_PATH_VERTEX_SHOW_POPUP= 'tax/vertexsmb_settings/show_tarequest_popup';
      
     public function getQuoteAllowedControllers(){
         $_quote_allowed_controllers=array('onepage','multishipping','sales_order_create');

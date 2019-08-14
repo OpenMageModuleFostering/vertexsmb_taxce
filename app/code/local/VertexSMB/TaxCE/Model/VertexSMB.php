@@ -19,7 +19,7 @@ class VertexSMB_TaxCE_Model_VertexSMB extends Mage_Core_Model_Abstract {
     * @return Exception|unknown
     */
    public function SendApiRequest($request,$order=null, $type) {
-         
+          
         $object_id=null;
         if (strpos($type,'invoice')===0)
             $object_id=$order->getId();
@@ -37,6 +37,7 @@ class VertexSMB_TaxCE_Model_VertexSMB extends Mage_Core_Model_Abstract {
             
             $client = new SoapClient($api_url, array('connection_timeout' => 300,'trace' => true, 'soap_version' => SOAP_1_1));
             
+             
             if ($type=='tax_area_lookup')
                 $tax_request_result = $client->LookupTaxAreas60($request);
             else 

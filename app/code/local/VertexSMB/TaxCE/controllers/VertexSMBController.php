@@ -62,6 +62,13 @@ class VertexSMB_TaxCE_VertexSMBController extends Mage_Adminhtml_Controller_Acti
 
         $order_post=$this->getRequest()->getPost('order');                    
             
+        /*Other Countries*/
+        if ($address->getCountryId()!='USA') {
+            $result['message']='not_usa_address';
+            echo Mage::app()->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+            exit();
+        }
+        
         $TaxAreaModel=Mage::getModel('taxce/TaxAreaRequest');
         $request_result=$TaxAreaModel->prepareRequest($address)->taxAreaLookup();
         if ($request_result instanceof Exception) {
