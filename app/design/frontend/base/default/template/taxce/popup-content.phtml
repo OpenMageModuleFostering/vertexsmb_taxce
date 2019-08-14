@@ -1,0 +1,81 @@
+<?php $tax_area_responses = $this->getResponse(); ?>
+<?php $tax_area_responses_array=$tax_area_responses->TaxAreaResponse->TaxAreaResult; ?> 
+<div  class="selectaddress-container step a-item" >
+    <div lass="col1-set">
+        
+            <h3><?php echo $this->__('Please verify your address'); ?></h3>          
+            <ul class="form-list">
+                <li class="control"><?php echo $this->__('Your shipping address may be updated according to selection'); ?></li>
+                 <?php foreach ($tax_area_responses_array as $tax_response): ?>                   
+                    <li class="control">
+                        <input type="radio" class="radio" id="tax_area_id_<?php echo $tax_response->taxAreaId; ?>"  value="<?php echo $tax_response->taxAreaId; ?>"   name="tax_area_id">
+                        <?php
+                            $tax_jurisdictions=$tax_response->Jurisdiction; 
+                            krsort($tax_jurisdictions);                             
+                            $area_names=array();
+                            foreach ($tax_jurisdictions as $area_jursdiction )
+                                $area_names[]=$area_jursdiction->_;
+                      
+                              $area_name=implode(', ', $area_names);                          
+                        ?>
+                        <label for="tax_area_id_<?php echo $tax_response->taxAreaId; ?>"><?php echo ucwords(strtolower($area_name)); ?></label>  
+                        <input type="hidden" name="city_<?php echo $tax_response->taxAreaId; ?>" id="tax_city_<?php echo $tax_response->taxAreaId; ?>" value="<?php echo $tax_response->PostalAddress->City; ?>" />
+                    </li>                    
+                <?php endforeach; ?>
+            </ul>
+            <div class="buttons-set">
+                <p class="required">&nbsp;</p>
+                <button onclick="javascript:void(0);" class="button" type="button" id="onepage-select-tax-area-button"><span><span><?php echo $this->__('Continue'); ?></span></span></button>
+            </div>    
+    </div>
+</div>  
+  
+<script type="text/javascript">
+                
+    $('opc-selectaddress').style.display = "block";
+    $('popup-shadow').style.display = "block";
+    $('onepage-select-tax-area-button').observe('click', select_address);
+        
+    function select_address(){
+        var tax_area_id=$$('input:checked[type="radio"][name="tax_area_id"]').pluck('value');
+        if (tax_area_id=="undefined" || tax_area_id.length==0) {
+            alert('Please select address');
+            return false;
+        }
+        var new_city=$('tax_city_'+tax_area_id).value;
+        
+        $('opc-selectaddress').style.display = "none";
+        $('popup-shadow').style.display = "none"; 
+        if ( typeof  shipping !== 'undefined' ) {            
+            var success_event=shipping;
+            var form_object=$('co-shipping-form');
+        }else {            
+            var success_event=billing;
+            var form_object=$('co-billing-form');
+        }
+        form_object.innerHTML +='<input id="tax_area_id_el" type="hidden" name="tax_area_id" value="'+tax_area_id+'" />\n\
+                                 <input id="tax_new_city_el" type="hidden" name="tax_new_city" value="'+new_city+'" />';
+         
+ 
+        var request = new Ajax.Request(
+          '<?php echo Mage::getUrl('checkout/onepage/saveTaxArea');?>' ,
+            {
+               method:'post',
+               onComplete: SelectAddressComplete,
+               onSuccess: success_event.onSave,                   
+               parameters: form_object.serialize(true)
+            }
+        );  
+       /* console.log(tax_area_id); */      
+    }    
+    
+    function SelectAddressComplete(){
+        $('tax_area_id_el').remove(); 
+        $('tax_new_city_el').remove();
+        checkout.reloadProgressBlock('billing');
+        checkout.reloadProgressBlock('shipping');
+        checkout.reloadProgressBlock('shipping_method');
+        checkout.reloadProgressBlock('payment_method');       
+    }
+    
+</script>

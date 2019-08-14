@@ -1,0 +1,14 @@
+<?php if (Mage::helper('taxce')->IsVertexActive()): ?>
+<style>
+.address-window {z-index:9999; background: #fff; position:absolute; width:500px; height:auto; border: 1px solid #ccc; top: 40%; left:30%; display:none; }    
+.selectaddress-container { margin:auto; padding: 25px;}
+.selectaddress-container h3 {text-align:center;}
+.selectaddress-container .form-list .control  label, .selectaddress-container .form-list .control  label:hover {background-color: #fff;}
+.bg-shadow {z-index: 999; position: absolute; top: 0; width: 100%; height:100%; display:none; background-color: #000; opacity: 0.5;}
+</style>    
+
+<div id="opc-selectaddress" class="popup address-window">
+    <div id="checkout-selectaddress-load"></div> 
+</div>
+<div id="popup-shadow" class="bg-shadow">&nbsp;</div>
+ <?php endif; ?>

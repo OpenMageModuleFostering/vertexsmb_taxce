@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <acl>
+        <resources>
+            <admin> 
+            	<children>
+                   <system>
+                        <children>
+                            <config>
+                                <tax translate="title">
+                                        <title>Tax Section</title>
+                                </tax>
+                            </config>
+                        </children>
+                    </system>
+                </children>
+            </admin>            
+        </resources>
+    </acl>
+</config> 

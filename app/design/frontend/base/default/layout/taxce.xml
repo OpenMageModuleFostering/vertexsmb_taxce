@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout version="0.1.0">
+    <checkout_onepage_index>
+         <update handle="taxce_popup" />
+    </checkout_onepage_index>
+    
+     <taxce_popup>
+        <reference name="before_body_end">
+            <block type="page/html"   template="taxce/popup.phtml"/>
+        </reference>
+    </taxce_popup>
+</layout>
