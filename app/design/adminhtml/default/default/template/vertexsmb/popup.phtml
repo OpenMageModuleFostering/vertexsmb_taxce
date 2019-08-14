@@ -1,5 +1,11 @@
-<?php if (Mage::helper('taxce')->IsVertexActive()): ?>
-
+<?php 
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+?>
+<?php if (Mage::helper('taxce')->IsVertexSMBActive()): ?>
 <style>
 .address-window {z-index:9999; background: #fff; position:absolute; width:500px; height:auto; border: 1px solid #ccc; top: 55%; left:30%; display:none; }    
 .selectaddress-container { margin:auto; padding: 25px;}
@@ -13,7 +19,8 @@
 </div>
 <div id="popup-shadow" class="bg-shadow">&nbsp;</div>
    <script type="text/javascript"> 
-
+    
+   
     order.loadArea= function(area, indicator, params){
         var url = this.loadBaseUrl;
         if (area) {
@@ -38,7 +45,7 @@
                 }.bind(this),
                 
                 onComplete:  function() {  
-                          console.log(params['order[billing_address][city]']);
+                          /*console.log(params['order[billing_address][city]']); */
                         if ( ( typeof area === 'string' &&  area!='header' && area!='totals' ) ||
                                 ( typeof area === 'object' && area[0]!='totals' &&  area[0]!='header' )  || 
                                 (typeof params['order[billing_address][city]']!='undefined' || typeof params['order[shipping_address][city]']!='undefined')  )  
@@ -69,7 +76,7 @@
     
    function getTaxAreaId(params){      
        var request = new Ajax.Request(
-                    '<?php echo Mage::getUrl('*/taxce/TaxArea');?>' ,
+                    '<?php echo Mage::getUrl('*/vertexSMB/TaxArea');?>' ,
                       {
                          method:'post',
                          /* onComplete: SelectAddressComplete, */
@@ -92,10 +99,10 @@
         }
 
         if (response.error){
-            if ((typeof response.message) == 'string') {
-                alert(response.message);
-            } else {                 
-                alert(response.message.join("\n"));
+            if ((typeof response.message) == 'string') {         	     
+            	alert(response.message);                
+            } else {                                
+                alert(response.message.join("\n"));                
             }
 
             return false;

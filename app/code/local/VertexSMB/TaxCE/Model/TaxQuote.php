@@ -1,10 +1,12 @@
 <?php
-
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+ 
  class VertexSMB_TaxCE_Model_TaxQuote extends Mage_Core_Model_Abstract {
-       
-    private $_ItemsTaxLines=array();
-    private $_ItemsTaxQuoteId=array();
-    
+
     public function _construct()
     {
         $this->_init('taxce/taxquote');
@@ -14,15 +16,14 @@
         return Mage::helper('taxce');
     }
      
-    public function getTaxQuote($information) {    
-        $session=$this->getHelper()->getSession();
-        $this->_ItemsTaxQuoteId=array();           
-        $this->_ItemsTaxLines=array(); 
+    public function getTaxQuote($information) {     
         
+        /*@todo check it*/
          /* Prevent multiple query when id updated */
         if (!$information['tax_area_id'] && !$this->getHelper()->AllowCartQuote())
             return false;
-        /* Automatically decide tax area id */
+        /* @todo compare with tax model seems dublicate*/
+        /* Automatically determine tax area id */
         
         if ($this->getHelper()->getSourcePath()=='cart_checkout_index' || $this->getHelper()->getSourcePath()=='cart_checkout_couponPost') { 
             $information['tax_area_id']='';
@@ -33,65 +34,32 @@
        /* Quotation Request Array*/
        $information['request_type']='QuotationRequest';                
        $request=Mage::getModel('taxce/requestItem')->setData($information)->exportAsArray();
-       /* Quotation Request Array*/
+       /* Quotation Request Array*/        
        
-       /*Some special magic for quote*/
-          $i=1; /* lineItemNumber */
-        foreach($information['order_items'] as $key=>$item){                                          
-                $item_tax_info=array();            
-                $item_tax_info['lineItemNumber']=$i;
-                $item_tax_info['quote_item_id']=$key;
-                $this->_ItemsTaxLines[$i]= new Varien_Object($item_tax_info);
-                $i++;
-        }            
-        /*Some special magic for quote*/
-        
-       
-        $tax_quote_result=Mage::getModel('taxce/taxce')->SendApiRequest($request,null,'quote');
+        $tax_quote_result=Mage::getModel('taxce/vertexSMB')->SendApiRequest($request,null,'quote');
         if ($tax_quote_result instanceof Exception) {               
             /*@info error handles for different page types */
              if (Mage::app()->getRequest()->getControllerName()=='onepage' || Mage::app()->getRequest()->getControllerName()=='sales_order_create') {
-                  Mage::log("Quote Request Error: ".$tax_quote_result->getMessage()."Controller:  ".$this->getHelper()->getSourcePath(), null, 'taxce.log');
-                  $result=array('error' => 1, 'message' => "Tax Calculation Request Error. Please check your address");                 
+                  Mage::log("Quote Request Error: ".$tax_quote_result->getMessage()."Controller:  ".$this->getHelper()->getSourcePath(), null, 'vertexsmb.log');
+                  $result=array('error' => 1, 'message' => "Tax calculation request error. Please check your address");                 
                   echo Mage::app()->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));               
                   exit();
              }
-             if ($this->getHelper()->getSourcePath()=='cart_checkout_index' || $this->getHelper()->getSourcePath()=='cart_checkout_couponPost') {
-                 $this->getHelper()->getSession()->setVertexTQ(0);
+             if ($this->getHelper()->getSourcePath()=='cart_checkout_index' || $this->getHelper()->getSourcePath()=='cart_checkout_couponPost')                
                  $this->getHelper()->getSession()->addError(Mage::helper('core')->escapeHtml("Tax Calculation Request Error. Please check your address"));                 
-             }
-             $session->setItemsTaxQuoteId();
+                          
              return false;
         }
-                 
-        if (is_array($tax_quote_result->QuotationResponse->LineItem))
-             $items_tax=$tax_quote_result->QuotationResponse->LineItem;
-         else 
-             $items_tax[]=$tax_quote_result->QuotationResponse->LineItem;
-
-
-      foreach ($items_tax as $item) {             
-          $lineItemNumber=$item->lineItemNumber;
-          $ItemTotaltax=$item->TotalTax->_;    
-          /* SUMM Percents For Jurisdictions */
-          $TaxPercent=0;
-          foreach ($item->Taxes  as $key=>$tax_value) 
-              if ($key=="EffectiveRate")
-                $TaxPercent+=$tax_value;
-           
-          $TaxPercent=$TaxPercent*100;     
-         
-          /* SUMM Percents For Jurisdictions */
-          $items_tax_lines_data=$this->_ItemsTaxLines[$lineItemNumber]->getData();
-          $items_tax_lines_data['tax_amount']=$ItemTotaltax;
-          $items_tax_lines_data['base_tax_amount']=$ItemTotaltax;
-          $items_tax_lines_data['tax_percent']=$TaxPercent;
-          $this->_ItemsTaxLines[$lineItemNumber]->setData($items_tax_lines_data);
-          
-          $quote_item_id=$this->_ItemsTaxLines[$lineItemNumber]->getQuoteItemId();
-          $this->_ItemsTaxQuoteId[$quote_item_id]=$this->_ItemsTaxLines[$lineItemNumber];
-      }                           
-        $session->setItemsTaxQuoteId($this->_ItemsTaxQuoteId);
+        /*beta*/
+        $ResponseModel=Mage::getModel('taxce/TaxQuoteResponse')->parseResponse($tax_quote_result);
+        $this->setResponse($ResponseModel);
+ 
+        $items_tax=$ResponseModel->getTaxLineItems();
+        $quote_taxed_items=$ResponseModel->getQuoteTaxedItems();
+ 
+        return $quote_taxed_items;
+        /* beta */
+        
    }
    
     /* Collect Quote Information */

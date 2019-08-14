@@ -1,5 +1,12 @@
 <?php
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+ 
 require Mage::getModuleDir('controllers', 'Mage_Checkout') . DS . 'OnepageController.php';
+ 
 class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController {
     
    /**
@@ -7,7 +14,7 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
      */
     public function saveShippingAction()
     {
-        if (!Mage::helper('taxce')->IsVertexActive()) {
+        if (!Mage::helper('taxce')->IsVertexSMBActive()) {
             parent::saveShippingAction();
             return $this;
         }      
@@ -17,26 +24,27 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
         if ($this->getRequest()->isPost()) {
             $data = $this->getRequest()->getPost('shipping', array());
             $customerAddressId = $this->getRequest()->getPost('shipping_address_id', false);
-            $data['tax_area_id']="";
+
             $result = $this->getOnepage()->saveShipping($data, $customerAddressId);
             
-             /*taxce*/            
-            $address=$this->getOnepage()->getQuote()->getShippingAddress();                    
-            $address->setTaxAreaId()->save();
-             if ($this->saveTaxAreaId($address)){           
-                $result['goto_section'] = 'shipping_method';
-                $result['update_section'] = array(
-                    'name' => 'shipping-method',
-                    'html' => $this->_getShippingMethodsHtml()
-                );
-                $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
-             }
-        }
+             /*VertexSMB*/            
+            $address=$this->getOnepage()->getQuote()->getShippingAddress();      
+            /* Save Tax Area & Correct City | Show popup window */
+            if (!$this->saveTaxAreaId($address))
+                return $this;            
+       
+            $result['goto_section'] = 'shipping_method';
+            $result['update_section'] = array(
+                'name' => 'shipping-method',
+                'html' => $this->_getShippingMethodsHtml()
+            );
+            $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));             
+        }        
     }
     
         public function saveBillingAction()
     {
-        if (!Mage::helper('taxce')->IsVertexActive()) {
+        if (!Mage::helper('taxce')->IsVertexSMBActive()) {
             parent::saveBillingAction();
             return $this;
         }                
@@ -50,14 +58,9 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
             if (isset($data['email'])) {
                 $data['email'] = trim($data['email']);
             }
-            $data['tax_area_id']="";
-            $result = $this->getOnepage()->saveBilling($data, $customerAddressId);
-            
              
-            $address=$this->getOnepage()->getQuote()->getBillingAddress(); 
-            $address->setTaxAreaId()->save();
-             
-            $tax_area_result=true;
+            $result = $this->getOnepage()->saveBilling($data, $customerAddressId);            
+ 
             if (!isset($result['error'])) {
                 if ($this->getOnepage()->getQuote()->isVirtual()) {                                                            
                     $result['goto_section'] = 'payment';
@@ -65,9 +68,12 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
                         'name' => 'payment-method',
                         'html' => $this->_getPaymentMethodsHtml()
                     );
-                    $tax_area_result=$this->saveTaxAreaId($address); 
+                    $address=$this->getOnepage()->getQuote()->getBillingAddress(); 
+                    /* Save Tax Area & Correct City | Show popup window */
+                    if (!$this->saveTaxAreaId($address))
+                        return $this;                    
                 } elseif (isset($data['use_for_shipping']) && $data['use_for_shipping'] == 1) {
-                    $tax_area_result=$this->saveTaxAreaId($address); 
+                    
                    
                     $result['goto_section'] = 'shipping_method';
                     $result['update_section'] = array(
@@ -77,18 +83,19 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
 
                     $result['allow_sections'] = array('shipping');
                     $result['duplicateBillingInfo'] = 'true';
+                    $address=$this->getOnepage()->getQuote()->getShippingAddress();
+                    /* Save Tax Area & Correct City | Show popup window */
+                    if (!$this->saveTaxAreaId($address))
+                        return $this;                    
                 } else {
                     $result['goto_section'] = 'shipping';
                 }
-            }
-            if ($tax_area_result) {
-                $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
-            }
-             
+            }                       
+         
+           $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));                        
         }
     }
-
-    
+            
      public function saveTaxAreaAction()
     {
         if ($this->_expireAjax()) {
@@ -97,9 +104,7 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
         if ($this->getRequest()->isPost()) {
             $tax_area_id = $this->getRequest()->getPost('tax_area_id', 0);  
             $new_city = $this->getRequest()->getPost('tax_new_city', 0);     
-           
-            
-       
+                              
             if ($this->getOnepage()->getQuote()->isVirtual()) {
                 $address=$this->getOnepage()->getQuote()->getBillingAddress();  
                 $result['goto_section'] = 'payment';
@@ -157,74 +162,69 @@ class VertexSMB_TaxCE_OnepageController extends Mage_Checkout_OnepageController 
     }
     
     public function saveTaxAreaId($address){
-         $request_result=Mage::Helper('taxce')->LookupAreaRequest($address);
-           if ($request_result instanceof Exception) {
-               Mage::log("Tax Area Lookup Error: ".$request_result->getMessage(), null, 'taxce.log');
+         $TaxAreaModel=Mage::getModel('taxce/TaxAreaRequest');
+         $request_result=$TaxAreaModel->prepareRequest($address)->taxAreaLookup();
+         $address_changed=false;
+         if ($request_result instanceof Exception) {
+              
             if (Mage::app()->getRequest()->getControllerName()=='onepage' || Mage::app()->getRequest()->getControllerName()=='sales_order_create') {
-                  Mage::log("Quote Request Error: ".$request_result->getMessage()."Controller:  ".Mage::helper('taxce')->getSourcePath(), null, 'taxce.log');
+                  Mage::log("Quote Request Error: ".$request_result->getMessage()."Controller:  ".Mage::helper('taxce')->getSourcePath(), null, 'vertexsmb.log');
                   $result=array('error' => 1, 'message' => "Tax Calculation Request Error. Please check your address");                 
                   echo Mage::app()->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));               
                   exit();
-             }            
-             if (Mage::helper('taxce')->getSourcePath()=='cart_checkout_index' || Mage::helper('taxce')->getSourcePath()=='cart_checkout_couponPost') {
-                 Mage::helper('taxce')->getSession()->setVertexTQ(0);
+             }           
+             
+             /*@todo check cart page if we use tax_area_id there*/
+             if (Mage::helper('taxce')->getSourcePath()=='cart_checkout_index' || Mage::helper('taxce')->getSourcePath()=='cart_checkout_couponPost') {                 
                  Mage::helper('taxce')->getSession()->addError(Mage::helper('core')->escapeHtml("Tax Calculation Request Error. Please check your address"));                 
              }             
                return false;
            }
-           
-           $tax_area_results=$request_result->TaxAreaResponse->TaxAreaResult;
+           $TaxAreaResposeModel=$TaxAreaModel->getResponse();
+                    
+           /*beta*/   
           
-           
-           if (is_array($tax_area_results) && Mage::helper('taxce')->ShowPopup()) {
-            $block=Mage::app()->getLayout()->createBlock('page/html')->setTemplate('taxce/popup-content.phtml')
-                    ->setData('response',$request_result)->toHtml();           
+           if ($TaxAreaResposeModel->getResultsCount()>1 && Mage::helper('taxce')->ShowPopup()) {               
+                $block=Mage::app()->getLayout()->createBlock('core/template')->setTemplate('vertexsmb/popup-content.phtml')
+                                  ->setData('response',$request_result)->toHtml();           
                 $result['goto_section'] = 'selectaddress';
                 $result['update_section'] = array(
                     'name' => 'selectaddress',
                     'html' => $block
-               );
-               $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
-               return false;           
-           } elseif(is_array($tax_area_results) && !Mage::helper('taxce')->ShowPopup()){
-               $tax_area_id=$tax_area_results[0]->taxAreaId;
-                
-               $address->setTaxAreaId($tax_area_id)->save();               
-               $this->getOnepage()->getQuote()->collectTotals()->save();      
-               /* When tax_area_id stored replace */
-               if ($address->getAddressType()=='billing' && $this->getOnepage()->getQuote()->getShippingAddress()->getSameAsBilling())
-                    $this->getOnepage()->getQuote()->getShippingAddress()->setTaxAreaId($tax_area_id)->save();                 
-           } else {                   
-                 $tax_area_id=$request_result->TaxAreaResponse->TaxAreaResult->taxAreaId;
- 
-                 $address->setTaxAreaId($tax_area_id)->save();
-                 $this->getOnepage()->getQuote()->collectTotals()->save();   
-                 /* When tax_area_id stored replace */
-                 if ($address->getAddressType()=='billing' && $this->getOnepage()->getQuote()->getShippingAddress()->getSameAsBilling())
-                    $this->getOnepage()->getQuote()->getShippingAddress()->setTaxAreaId($tax_area_id)->save();       
-
-            /* Chack if city differs */
-            $address_changed=false;
-           if (strtolower($address->getCity())!=strtolower($request_result->TaxAreaResponse->TaxAreaResult->PostalAddress->City)) {
-               $old_city=$address->getCity();
-               $new_city=$request_result->TaxAreaResponse->TaxAreaResult->PostalAddress->City;
-               $address_changed=true;
+                );
+                $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+                return false;                      
+           }else {                
+                $FirstTaxArea=$TaxAreaResposeModel->GetFirstTaxAreaInfo();
+                                                           
+                    /* @todo modify template for object or address */
+                if ($FirstTaxArea->getCity()) {
+                    if (strcmp(strtolower($address->getCity()),strtolower($FirstTaxArea->getCity())) !==0){
+                        Mage::log("Original City: ".$address->getCity()." - New City: ".$FirstTaxArea->getCity(), null, 'vertexsmb.log');
+                        $address_changed=true;             
+                         $block_address_update=Mage::app()->getLayout()->createBlock('core/template')->setTemplate('vertexsmb/addresschange-popup-content.phtml')
+                            ->setOldCity($address->getCity())->setNewCity($FirstTaxArea->getCity())->setTaxAreaId($FirstTaxArea->getTaxAreaId())->toHtml();     
+                    }
+                    $address->setCity($FirstTaxArea->getCity());                   
+                }
+                $address->setTaxAreaId($FirstTaxArea->getTaxAreaId())->save();     
+                $this->getOnepage()->getQuote()->collectTotals()->save();                                   
            }
-            /*Check if city differs */                   
-                 
-                if ($address_changed && !$this->getOnepage()->getQuote()->isVirtual()) {
-                    $block=Mage::app()->getLayout()->createBlock('page/html')->setTemplate('taxce/addresschange-popup-content.phtml')
-                            ->setOldCity($old_city)->setNewCity($new_city)->setTaxAreaId($tax_area_id)->toHtml();           
-                    $result['goto_section'] = 'selectaddress';
-                    $result['update_section'] = array(
-                        'name' => 'selectaddress',
-                        'html' => $block
-                    );
-                    $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
-                    return false;                               
-                } 
-            }                   
-            return true;
-            /*taxce*/            
+            
+           /* @todo find out why should be virtual only*/
+           if ($address_changed /*&& !$this->getOnepage()->getQuote()->isVirtual()*/ ) {                      
+                $result['goto_section'] = 'selectaddress';
+                $result['update_section'] = array(
+                    'name' => 'selectaddress',
+                    'html' => $block_address_update
+                );
+                
+                $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+                return false;     
+                       
+           }
+           /*beta*/
+                               
+            return true;          
     }
 }

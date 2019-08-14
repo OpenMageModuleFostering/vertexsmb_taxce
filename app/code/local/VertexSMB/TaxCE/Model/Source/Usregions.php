@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ **/
+ 
 class VertexSMB_TaxCE_Model_Source_Usregions {
     
     protected $_countries;
@@ -32,11 +37,14 @@ class VertexSMB_TaxCE_Model_Source_Usregions {
                 $this->_options[] = array('label'=>$this->_countries[$countryId], 'value'=>$regionOptions);
             }
         }
-        $options = $this->_options;
-        if(!$isMultiselect){
-            array_unshift($options);
-        }
+        $options = $this->_options;         
 
         return $options;
     }
+    
+    public function sortRegionCountries($a, $b)
+    {
+        return strcmp($this->_countries[$a], $this->_countries[$b]);
+    }
+    
 }

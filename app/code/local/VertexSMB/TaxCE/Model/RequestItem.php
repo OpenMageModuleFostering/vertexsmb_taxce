@@ -1,5 +1,11 @@
 <?php
-
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ **/
+ 
+ 
  class VertexSMB_TaxCE_Model_RequestItem extends Mage_Core_Model_Abstract {
        
     public function _construct()
@@ -10,6 +16,7 @@
     public function getHelper() {
         return Mage::helper('taxce');
     }
+    
     /* RequestType:
      * TaxAreaRequest
      * InvoiceRequest
@@ -42,7 +49,7 @@
         $i=1; /* lineItemNumber */
         foreach($items as $key=>$item){                              
             /* $key - quote_item_id */
-            $tmp_item=array('lineItemNumber'=>$i, 'locationCode'=>$this->getLocationCode(),
+            $tmp_item=array('lineItemNumber'=>$i,'lineItemId'=>$key, 'locationCode'=>$this->getLocationCode(),
                  'Seller'=> array (
                      'Company'=> $this->getCompanyId(),
                      'PhysicalOrigin'=>array(
@@ -70,7 +77,8 @@
             
             if ($this->getTaxAreaId())
                 $tmp_item['Customer']['Destination']['taxAreaId']=$this->getTaxAreaId();
-                        
+                                   
+            
             $query_items[]=$tmp_item;
             $i++;
         }

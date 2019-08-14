@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+ 
 $installer = $this;
 if ($installer->getConnection()->isTableExists($installer->getTable('taxce/taxrequest')) != true) {
     /**
@@ -38,7 +43,7 @@ if ($installer->getConnection()->isTableExists($installer->getTable('taxce/taxre
             'nullable'  => false,
             'default'   => NULL,
             ), 'Response XML')        
-        ->setComment('Log of requests to taxce');
+        ->setComment('Log of requests to Vertex SMB');
     $installer->getConnection()->createTable($table);
 }
 /*Customer Attribute*/

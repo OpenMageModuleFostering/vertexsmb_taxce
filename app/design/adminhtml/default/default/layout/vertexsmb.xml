@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+-->
+<layout version="0.1.0">
+    <adminhtml_sales_order_create_index>
+        <reference name="before_body_end">
+            <block  type="core/template"  template="vertexsmb/popup.phtml">
+            	<action method="unsetData"><key>cache_lifetime</key></action>
+            	<action method="unsetData"><key>cache_tags</key></action>
+            </block>
+        </reference>
+    </adminhtml_sales_order_create_index> 
+</layout>   

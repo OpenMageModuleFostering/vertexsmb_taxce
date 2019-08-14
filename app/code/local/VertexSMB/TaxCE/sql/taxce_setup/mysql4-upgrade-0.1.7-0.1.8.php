@@ -1,9 +1,13 @@
 <?php
-
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+ 
 $installer = $this;
 $installer->startSetup();
 
- 
 $installer->getConnection()->addColumn($installer->getTable('sales/quote_address'),
         'tax_area_id', 
         array(
@@ -11,10 +15,9 @@ $installer->getConnection()->addColumn($installer->getTable('sales/quote_address
             'nullable' => false,
             'default' => null,
             'length' => 255,
-            'comment' => 'Tax Jurisdictions Id'
+            'comment' => 'Tax Jurisdiction Id'
         )
-); 
-   
+);    
 
 $installer->getConnection()->addColumn($installer->getTable('sales/order_address'),
         'tax_area_id', 
@@ -23,7 +26,7 @@ $installer->getConnection()->addColumn($installer->getTable('sales/order_address
             'nullable' => false,
             'default' => null,
             'length' => 255,
-            'comment' => 'Tax Jurisdictions Id'
+            'comment' => 'Tax Jurisdiction Id'
         )
 ); 
  

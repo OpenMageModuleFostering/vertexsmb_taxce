@@ -1,27 +1,24 @@
-<?php $tax_area_responses = $this->getResponse(); ?>
-<?php $tax_area_responses_array=$tax_area_responses->TaxAreaResponse->TaxAreaResult; ?> 
+<?php 
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+?>
+<?php $old_city = $this->getOldCity(); ?>
+<?php $new_city = $this->getNewCity(); ?>
+<?php $tax_area_id=$this->getTaxAreaId(); ?>
 <div  class="selectaddress-container step a-item" >
-    <div lass="col1-set">
-        
-            <h3><?php echo $this->__('Please verify your address'); ?></h3>          
+    <div lass="col1-set">        
+            <h3><?php echo $this->__('Your shipping address has been updated'); ?></h3>          
             <ul class="form-list">
-                <li class="control"><?php echo $this->__('Your shipping address may be updated according to selection'); ?></li>
-                 <?php foreach ($tax_area_responses_array as $tax_response): ?>                   
-                    <li class="control">
-                        <input type="radio" class="radio" id="tax_area_id_<?php echo $tax_response->taxAreaId; ?>"  value="<?php echo $tax_response->taxAreaId; ?>"   name="tax_area_id">
-                        <?php
-                            $tax_jurisdictions=$tax_response->Jurisdiction; 
-                            krsort($tax_jurisdictions);                             
-                            $area_names=array();
-                            foreach ($tax_jurisdictions as $area_jursdiction )
-                                $area_names[]=$area_jursdiction->_;
-                      
-                              $area_name=implode(', ', $area_names);                          
-                        ?>
-                        <label for="tax_area_id_<?php echo $tax_response->taxAreaId; ?>"><?php echo ucwords(strtolower($area_name)); ?></label>  
-                        <input type="hidden" name="city_<?php echo $tax_response->taxAreaId; ?>" id="tax_city_<?php echo $tax_response->taxAreaId; ?>" value="<?php echo $tax_response->PostalAddress->City; ?>" />
-                    </li>                    
-                <?php endforeach; ?>
+                             
+                    <li class="control">                         
+                        <label><?php echo $this->__('Original City: %s',ucwords(strtolower($old_city)) ); ?></label>  
+                    </li>    
+                    <li class="control">                         
+                        <label><?php echo $this->__('Validated City: %s',ucwords(strtolower($new_city)) ); ?></label>  
+                    </li>                                           
             </ul>
             <div class="buttons-set">
                 <p class="required">&nbsp;</p>
@@ -29,7 +26,7 @@
             </div>    
     </div>
 </div>  
-  
+   
 <script type="text/javascript">
                 
     $('opc-selectaddress').style.display = "block";
@@ -37,13 +34,13 @@
     $('onepage-select-tax-area-button').observe('click', select_address);
         
     function select_address(){
-        var tax_area_id=$$('input:checked[type="radio"][name="tax_area_id"]').pluck('value');
+        var tax_area_id="<?php echo $tax_area_id ?>";
         if (tax_area_id=="undefined" || tax_area_id.length==0) {
-            alert('Please select address');
+            alert('Please change  address');
             return false;
         }
-        var new_city=$('tax_city_'+tax_area_id).value;
-        
+       var new_city="<?php echo $new_city; ?>";
+         
         $('opc-selectaddress').style.display = "none";
         $('popup-shadow').style.display = "none"; 
         if ( typeof  shipping !== 'undefined' ) {            
@@ -66,11 +63,11 @@
                parameters: form_object.serialize(true)
             }
         );  
-       /* console.log(tax_area_id); */      
+        console.log(tax_area_id);         
     }    
     
     function SelectAddressComplete(){
-        $('tax_area_id_el').remove(); 
+        $('tax_area_id_el').remove();       
         $('tax_new_city_el').remove();
         checkout.reloadProgressBlock('billing');
         checkout.reloadProgressBlock('shipping');

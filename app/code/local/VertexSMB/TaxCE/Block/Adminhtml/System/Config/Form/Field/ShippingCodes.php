@@ -1,5 +1,9 @@
 <?php
-  
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
 class VertexSMB_TaxCE_Block_Adminhtml_System_Config_Form_Field_ShippingCodes extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
     protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)

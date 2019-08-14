@@ -1,11 +1,11 @@
 <?php
-
 /**
- * Description of Vertex
- *
- * @author alukyanau
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
  */
-class VertexSMB_TaxCE_TaxceController extends Mage_Adminhtml_Controller_Action {
+
+class VertexSMB_TaxCE_VertexSMBController extends Mage_Adminhtml_Controller_Action {
 
     protected function _construct() {        
         $this->setUsedModuleName('VertexSMB_TaxCE');
@@ -40,14 +40,15 @@ class VertexSMB_TaxCE_TaxceController extends Mage_Adminhtml_Controller_Action {
         if ($order = $this->_initOrder()) {                        
            $invoice_request_data=Mage::getModel('taxce/taxInvoice')->PrepareInvoiceData($order);              
            if ($invoice_request_data && Mage::getModel('taxce/taxInvoice')->SendInvoiceRequest($invoice_request_data)) 
-               $this->_getSession()->addSuccess( $this->__('The Vertex invoice has been sent.'));                   
+               $this->_getSession()->addSuccess( $this->__('The Vertex SMB invoice has been sent.'));                   
         }
         $this->_redirect('*/sales_order/view', array('order_id' => $order->getId()));       
     }
     
     public function TaxAreaAction(){
         $orderCreateModel=Mage::getSingleton('adminhtml/sales_order_create');
-                  
+        $address_changed=false;
+          
         if ($orderCreateModel->getQuote()->isVirtual() || $orderCreateModel->getQuote()->getShippingAddress()->getSameAsBilling() ) 
               $address=$orderCreateModel->getQuote()->getBillingAddress();
         else 
@@ -59,58 +60,47 @@ class VertexSMB_TaxCE_TaxceController extends Mage_Adminhtml_Controller_Action {
             exit();                  
         }
 
-        $order_post=$this->getRequest()->getPost('order');
-        /*if (  $address->getTaxAreaId()  && !isset($order_post['billing_address']) && !isset($order_post['shipping_address'])  ) {
-            $result['message']='address not changed';
-            echo Mage::app()->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));   
-            exit();                  
-        }    */                     
+        $order_post=$this->getRequest()->getPost('order');                    
             
-        $request_result=Mage::Helper('taxce')->LookupAreaRequest($address);
+        $TaxAreaModel=Mage::getModel('taxce/TaxAreaRequest');
+        $request_result=$TaxAreaModel->prepareRequest($address)->taxAreaLookup();
         if ($request_result instanceof Exception) {
-            Mage::log("Tax Area Lookup Error: ".$request_result->getMessage(), null, 'taxce.log');
+            Mage::log("Admin Tax Area Lookup Error: ".$request_result->getMessage(), null, 'vertexsmb.log');
             $result['message'] = $request_result->getMessage();
+            $result['error'] =1;
+            echo Mage::app()->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+            exit();
         }
         
-        $tax_area_results=$request_result->TaxAreaResponse->TaxAreaResult;
-        if (is_array($tax_area_results) && Mage::helper('taxce')->ShowPopup()) {
-             $block=Mage::app()->getLayout()->createBlock('page/html')->setTemplate('taxce/popup-content.phtml')
-                 ->setData('response',$request_result)->toHtml(); 
+        $TaxAreaResposeModel=$TaxAreaModel->getResponse();
+         
+        
+        if ($TaxAreaResposeModel->getResultsCount()>1 && Mage::helper('taxce')->ShowPopup()) { 
+                $block=Mage::app()->getLayout()->createBlock('page/html')->setTemplate('vertexsmb/popup-content.phtml')
+                                  ->setData('response',$request_result)->toHtml();           
              $result['message'] ="show_popup";
-             $result['html'] =$block;
-        }elseif (is_array($tax_area_results) && !Mage::helper('taxce')->ShowPopup()) { 
-            $tax_area_id=$tax_area_results[0]->taxAreaId;
-            $address->setTaxAreaId($tax_area_id);
-            $result['message']='tax_area_id_found';
-            $orderCreateModel->saveQuote();
-        }else { 
-          $tax_area_id=$request_result->TaxAreaResponse->TaxAreaResult->taxAreaId;
-          $address->setTaxAreaId($tax_area_id);//->save();  
-          $result['message']='tax_area_id_found';
-        /* Chack if city differs */
-        $address_changed=false;
-       if (strtolower($address->getCity())!=strtolower($request_result->TaxAreaResponse->TaxAreaResult->PostalAddress->City)) {
-           $old_city=$address->getCity();
-           $new_city=$request_result->TaxAreaResponse->TaxAreaResult->PostalAddress->City;
-           $address_changed=true;
-       }
-        /*Check if city differs */             
+             $result['html'] =$block;                                       
+        } else {
+            $FirstTaxArea=$TaxAreaResposeModel->GetFirstTaxAreaInfo();
+            if ($FirstTaxArea->getCity()) {
+                $result['message']='tax_area_id_found';            
+                /* @todo modify template for object or address */
+                if (strtolower($address->getCity())!=strtolower($FirstTaxArea->getCity())){
+                    $address_changed=true;             
+                     $block_address_update=Mage::app()->getLayout()->createBlock('page/html')->setTemplate('vertexsmb/addresschange-popup-content.phtml')
+                        ->setOldCity($address->getCity())->setNewCity($FirstTaxArea->getCity())->setTaxAreaId($FirstTaxArea->getTaxAreaId())->toHtml();     
+                }
+                $address->setCity($FirstTaxArea->getCity());
+            }
+                $address->setTaxAreaId($FirstTaxArea->getTaxAreaId())->save();                                  
+                $orderCreateModel->saveQuote();            
+        }             
           
-          if ($address_changed && !$address->getQuote()->isVirtual()) {
-              $block=Mage::app()->getLayout()->createBlock('page/html')->setTemplate('taxce/addresschange-popup-content.phtml')
-                 ->setOldCity($old_city)->setNewCity($new_city)->setTaxAreaId($tax_area_id)->toHtml(); 
-               $result['message'] ="show_popup";
-               $result['html'] =$block;
-          }
-          
-          
-           
-        /*$result['billing_address']=$address->getData();
-          $result['shipping_address']=$orderCreateModel->getQuote()->getShippingAddress()->getData();
-          $result['same_as_billing']=$orderCreateModel->getQuote()->getData(); 
-         */
-          $orderCreateModel->saveQuote();
+        if ($address_changed && !$address->getQuote()->isVirtual()) {
+             $result['message'] ="show_popup";
+             $result['html'] =$block_address_update;
         }
+           
         echo Mage::app()->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));   
         exit();                  
     }
@@ -138,6 +128,7 @@ class VertexSMB_TaxCE_TaxceController extends Mage_Adminhtml_Controller_Action {
          exit();                 
     }
     
+    
      /**
      * Retrieve adminhtml session model object
      *
@@ -148,4 +139,5 @@ class VertexSMB_TaxCE_TaxceController extends Mage_Adminhtml_Controller_Action {
         return Mage::getSingleton('adminhtml/session');
     }
         
+    
 }

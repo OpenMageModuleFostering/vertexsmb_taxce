@@ -1,11 +1,11 @@
 <?php
- 
-
 /**
- * Description of TaxInvoice
- *
- * @author alukyanau
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
  */
+ 
+ 
  class VertexSMB_TaxCE_Model_TaxInvoice extends Mage_Core_Model_Abstract {
 
     public function _construct()
@@ -103,9 +103,9 @@
         
         if (Mage::getConfig ()->getModuleConfig ( 'Enterprise_GiftWrapping' )
             &&  Mage::getConfig ()->getModuleConfig ( 'Enterprise_GiftWrapping' )->is('active', 'true') ) { 
-            if ($original_item->getGwPrice() && count($this->getHelper()->AddOrderGiftWrap($order,$entity_item,$event)))
+            if (count($this->getHelper()->AddOrderGiftWrap($order,$entity_item,$event)))
                 $order_items[]=$this->getHelper()->AddOrderGiftWrap($order,$entity_item,$event);
-            if ($original_item->getGwCardPrice() && count($this->getHelper()->AddOrderPrintCard($order,$entity_item,$event)))
+            if (count($this->getHelper()->AddOrderPrintCard($order,$entity_item,$event)))
                 $order_items[]=$this->getHelper()->AddOrderPrintCard($order,$entity_item,$event);                        
         }
         /* Get Items Information*/
@@ -123,14 +123,14 @@
        if ($order==null)
            $order=Mage::registry('current_order');     
        
-       $request_result=Mage::getModel('taxce/taxce')->SendApiRequest($data,$order,'invoice');        
+       $request_result=Mage::getModel('taxce/vertexSMB')->SendApiRequest($data,$order,'invoice');        
        if ($request_result instanceof Exception) {
-            Mage::log("Invoice Request Error: ".$request_result->getMessage(), null, 'taxce.log');
+            Mage::log("Invoice Request Error: ".$request_result->getMessage(), null, 'vertexsmb.log');
             Mage::getSingleton('adminhtml/session')->addError($request_result->getMessage());
            return false;
        }
        
-       $order->addStatusHistoryComment('Vertex Invoice sent successfully. Amount: $'.$request_result->InvoiceResponse->TotalTax->_,  false)->save();
+       $order->addStatusHistoryComment('Vertex SMB Invoice sent successfully. Amount: $'.$request_result->InvoiceResponse->TotalTax->_,  false)->save();
        return true;
    }
 
@@ -139,27 +139,27 @@
        if ($order==null)
            $order=Mage::registry('current_order');     
        
-       $request_result=Mage::getModel('taxce/taxce')->SendApiRequest($data,$order,'invoice_cancel');        
+       $request_result=Mage::getModel('taxce/vertexSMB')->SendApiRequest($data,$order,'invoice_cancel');        
        if ($request_result instanceof Exception) {
-            Mage::log("Cancel Request Error: ".$request_result->getMessage(), null, 'taxce.log');
+            Mage::log("Cancel Request Error: ".$request_result->getMessage(), null, 'vertexsmb.log');
             Mage::getSingleton('adminhtml/session')->addError($request_result->getMessage());
            return false;
        }
        
-       $order->addStatusHistoryComment('Vertex Invoice canceled successfully. Amount: $'.$request_result->InvoiceResponse->TotalTax->_,  false)->save();
+       $order->addStatusHistoryComment('Vertex SMB Invoice canceled successfully. Amount: $'.$request_result->InvoiceResponse->TotalTax->_,  false)->save();
        return true;
    }
    /* Cancel Request Preparation*/
    public function SendRefundRequest($data,$order=null){
        if ($order==null)
            $order=Mage::registry('current_order');            
-       $request_result=Mage::getModel('taxce/taxce')->SendApiRequest($data,$order,'invoice_refund');        
+       $request_result=Mage::getModel('taxce/vertexSMB')->SendApiRequest($data,$order,'invoice_refund');        
        if ($request_result instanceof Exception) {
-            Mage::log("Refund Request Error: ".$request_result->getMessage(), null, 'taxce.log');
+            Mage::log("Refund Request Error: ".$request_result->getMessage(), null, 'vertexsmb.log');
             Mage::getSingleton('adminhtml/session')->addError($request_result->getMessage());
            return false;
        }       
-       $order->addStatusHistoryComment('Vertex Invoice refunded successfully. Amount: $'.$request_result->InvoiceResponse->TotalTax->_,  false)->save();
+       $order->addStatusHistoryComment('Vertex SMB Invoice refunded successfully. Amount: $'.$request_result->InvoiceResponse->TotalTax->_,  false)->save();
        return true;
    }   
       

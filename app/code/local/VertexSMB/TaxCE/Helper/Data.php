@@ -1,8 +1,13 @@
 <?php
-
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+ 
 class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
     
-    public function IsVertexActive(){      
+    public function IsVertexSMBActive(){      
          if (Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::CONFIG_XML_PATH_ENABLE_VERTEX, Mage::app()->getStore()->getId())) 
              return true;       
          return false;
@@ -38,10 +43,10 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         return  VertexSMB_TaxCE_Helper_Config::CONFIG_XML_PATH_VERTEX_TRANSACTION_TYPE;       
     }     
     public function getVertexHost(){
-        return   Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::VERTEX_API_HOST, Mage::app()->getStore()->getId());    
+        return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::VERTEX_API_HOST, Mage::app()->getStore()->getId());     
     }
     public function getVertexAddressHost(){
-        return   Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::VERTEX_ADDRESS_API_HOST, Mage::app()->getStore()->getId());     
+        return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::VERTEX_ADDRESS_API_HOST, Mage::app()->getStore()->getId());     
     }    
     public function getDefaultCustomerCode(){
         return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::CONFIG_XML_PATH_DEFAULT_CUSTOMER_CODE, Mage::app()->getStore()->getId());         
@@ -80,7 +85,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         return  Mage::getStoreConfig(VertexSMB_TaxCE_Helper_Config::VERTEX_PRINTED_GIFTCARD_CODE, Mage::app()->getStore()->getId());         
     }         
     public function IsAllowedQuote() {
-        $quote_allowed_controllers=VertexSMB_TaxCE_Helper_Config::getQuoteAllowedControllers();
+        $quote_allowed_controllers=Mage::helper('taxce/config')->getQuoteAllowedControllers();
         if ($this->AllowCartQuote()) 
             $quote_allowed_controllers[]='cart';
         
@@ -173,6 +178,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
          $regionModel = Mage::getModel('directory/region')->load($region_id);
          $company_state=$regionModel->getCode();   
          
+         /*Admin API verification*/
          $address=new Varien_Object();
          $address->setStreet1($this->getCompanyStreet1());
          $address->setStreet2($this->getCompanyStreet2());
@@ -180,39 +186,15 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
          $address->setRegionCode($company_state);
          $address->setPostcode($this->getCompanyPostalCode());
                                              
-        $request_result=$this->LookupAreaRequest($address);
-        if ($request_result instanceof Exception) {
-            Mage::log("Tax Area Lookup Error: ".$request_result->getMessage(), null, 'taxce.log');
-            return "Validation Error: Please check settings";
+         
+        $request_result=Mage::getModel('taxce/TaxAreaRequest')->prepareRequest($address)->taxAreaLookup();
+        if ($request_result instanceof Exception) {            
+            return "Address Validation Error: Please check settings";
         }
         return "Valid";
     }
     
-    public function LookupAreaRequest($address){
- 
-         $request=array(            
-         'Login'=>array('TrustedId'=>$this->getTrustedId()),
-         'TaxAreaRequest'=>array(              
-             'TaxAreaLookup'=> array(
-                 'PostalAddress'=>array(
-                        'StreetAddress1'=>$address->getStreet1(),
-                        'StreetAddress2'=>$address->getStreet2(),
-                        'City'=>$address->getCity(),
-                        'MainDivision'=>$address->getRegionCode(),   
-                        'PostalCode'=>$address->getPostcode(),  
-                    )
-                 ) 
-             )   
-         ); 
-         
-        $request_result=Mage::getModel('taxce/taxce')->SendApiRequest($request,null, 'tax_area_lookup');
-        if ($request_result instanceof Exception) {
-            Mage::log("Tax Area Lookup Error: ".$request_result->getMessage(), null, 'taxce.log');
-            return $request_result;
-        }
-        return $request_result;
-    }
-         
+   
     /* Company Information */
    public function AddSellerInformation($data){      
     
@@ -266,7 +248,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         
         if ($creditmemo_model->getAdjustmentPositive()) {
             $item_data=array();     
-            $item_data['product_class']=$this->getCreditmemoAdjustmentPositiveClass();       
+            $item_data['product_class']=$this->TaxClassNameByClassId($this->getCreditmemoAdjustmentPositiveClass());        
             $item_data['product_code']=$this->getCreditmemoAdjustmentPositiveCode();   
             $item_data['qty']=1; 
             $item_data['price']=-1*$creditmemo_model->getAdjustmentPositive(); 
@@ -275,7 +257,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         }
         if ($creditmemo_model->getAdjustmentNegative()) {
             $item_data=array();  
-            $item_data['product_class']=$this->getCreditmemoAdjustmentFeeClass();       
+            $item_data['product_class']=$this->TaxClassNameByClassId($this->getCreditmemoAdjustmentFeeClass());       
             $item_data['product_code']=$this->getCreditmemoAdjustmentFeeCode();   
             $item_data['qty']=1; 
             $item_data['price']=$creditmemo_model->getAdjustmentNegative(); 
@@ -291,7 +273,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
             return $item_data;
         }
         
-        $item_data['product_class']=$this->getGiftWrappingOrderClass();      
+        $item_data['product_class']=$this->TaxClassNameByClassId($this->getGiftWrappingOrderClass());      
         $item_data['product_code']=$this->getGiftWrappingOrderCode();
         $item_data['qty']=1;   
         $item_data['price']=$order_address->getGwPrice(); 
@@ -312,7 +294,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         if (!$this->IsFirstOfPartial($order_address,$original_entity)) {
             return $item_data;
         }                         
-        $item_data['product_class']=$this->getPrintedGiftcardClass();      
+        $item_data['product_class']=$this->TaxClassNameByClassId($this->getPrintedGiftcardClass());      
         $item_data['product_code']=$this->getPrintedGiftcardCode();
         $item_data['qty']=1;   
         $item_data['price']=$order_address->getGwCardPrice(); 
@@ -354,101 +336,36 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         return $item_data;
     }
      
-    /* Tax Quote Calculation*/
-    public function UpdateQuote($address) {
-      
-       $information_array = Mage::getModel('taxce/taxQuote')->collectQuotedata($address); 
-       /* Compliance withh Request Item Model*/
-       $information= new Varien_Object($information_array);
-       $session=$this->getSession(); 
-       
+    /*beta*/
+    /* Tax Quote calculation*/
+    public function TaxQuoteItems($address){
+        $information_array = Mage::getModel('taxce/taxQuote')->collectQuotedata($address); 
+        $information= new Varien_Object($information_array);
+        $information->setTaxAreaId();
+        $taxed_items_info=Mage::getModel('taxce/taxQuote')->getTaxQuote($information_array);
+        
+        return $taxed_items_info;
+    }
+    
+    public function CanQuoteTax(){
        if (!$this->IsAllowedQuote() )  
-               return false;       
-       
+               return false;      
        /* disable for index page. */
        if ($this->getSourcePath()=='onepage_checkout_index')
            return false;
        
-       if ($session->getVertexTQ()) {                                             
-            /*Compare seession vs current data*/                                                                       
-            if($this->CompareSessionQuotedData($information)) {                      
-                $session->setVertexD($information);                
-                Mage::getModel('taxce/taxQuote')->getTaxQuote($information_array);  
-            }                              
-        }else {
-            $session->setVertexTQ(1);  
-            $session->setVertexD($information); 
-            Mage::getModel('taxce/taxQuote')->getTaxQuote($information_array);   
-        }             
-         /*Calculate*/       
-          
-          return true;
-    }         
-
-    public function CompareSessionQuotedData($current_information_obj) {
-        
-        $need_quote = false; // Dont need any update
-      
-        $stored_information_obj = $this->getSession()->getVertexD();
-        $stored_information = $stored_information_obj->getData();
-        $current_information = $current_information_obj->getData();
-        $difference = $this->multi_diff($current_information, $stored_information);
-        
-        $count_changes_fields=count($difference);
-        
-        if ($count_changes_fields){                 
-               $need_quote = true;
-               
-        }
-        if ($count_changes_fields && ( isset($difference['customer_street1'])
-                    || isset($difference['customer_street2'])
-                    || isset($difference['customer_city'])
-                    || isset($difference['customer_region'])
-                    || isset($difference['customer_postcode']) 
-                   ) )                               
-            $current_information_obj->setTaxAreaId();                  
-        
-        /*$need_quote=true; Always udate quote */
-        return $need_quote;
+       return true;
     }
-
-    public function multi_diff($arr1, $arr2) {
-        $result = array();
-        foreach ($arr1 as $k => $v) {
-            if (!array_key_exists($k, $arr2)) {
-                $result[$k] = $v;
-            } else {
-                if (is_array($v) && is_array($arr2[$k])) {
-                    $diff = $this->multi_diff($v, $arr2[$k]);
-                    if (count($diff))
-                        $result[$k] = $diff;
-                }elseif ($arr2[$k] != $v) {
-                    $result[$k] = $v;
-                }
-            }
-        }
-        foreach ($arr2 as $k => $v) {
-            if (!array_key_exists($k, $arr1)) {
-                $result[$k] = $v;
-            } else {
-                if (is_array($v) && is_array($arr1[$k])) {
-                    $diff = $this->multi_diff($v, $arr1[$k]);
-                    if (count($diff))
-                        $result[$k] = $diff;
-                }elseif ($arr1[$k] != $v) {
-                    $result[$k] = $v;
-                }
-            }
-        }
-        return $result;
-    }
-    
+    /*beta*/
+     
+              
     /* Common function for item preparation  */
     public function PrepareItem($item, $type='ordered', $original_entity_item=null,$event=null){
         $item_data=array(); 
-               
+              
         $item_data['product_class']=$this->TaxClassNameByClassId($item->getProduct()->getTaxClassId());       
         $item_data['product_code']=$item->getSku();
+        $item_data['item_id']=$item->getId();
         
         /* Price */
          if  ($type=='invoiced') 
@@ -487,7 +404,7 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         $item_data=array(); 
         
         /* @todo move to config */
-        $item_data['product_class']=$this->getGiftWrappingItemClass();
+        $item_data['product_class']=$this->TaxClassNameByClassId($this->getGiftWrappingItemClass());
         $item_data['product_code']=$this->getGiftWrappingItemCodePrefix().'-'.$item->getSku();
         
         /* Price */
@@ -523,23 +440,13 @@ class VertexSMB_TaxCE_Helper_Data extends Mage_Core_Helper_Abstract {
         return $item_data;             
    }
    
-    
-    public function getSession(){
+   /* Used in other files for corrent session & access to quote*/
+   public function getSession(){
          if (Mage::app()->getRequest()->getControllerName()!='sales_order_create')
             return Mage::getSingleton('checkout/session'); 
         else 
             return Mage::getSingleton('adminhtml/session_quote'); 
     }
 
-    public function getTaxByQuoteItemId($item_quote_id){
-        $session=$this->getSession();
-        $ItemsTaxQuoteId=$session->getItemsTaxQuoteId();      
-       
-        if (isset($ItemsTaxQuoteId[$item_quote_id])) {
-            return $ItemsTaxQuoteId[$item_quote_id];
-        }       
-         
-        return 0;
-    }    
     
 }

@@ -1,11 +1,18 @@
 <?xml version="1.0"?> 
+<!--
+/**
+ * @package     VertexSMB_TaxCE
+ * @license     http://opensource.org/licenses/OSL-3.0  The Open Software License 3.0 (OSL 3.0)
+ * @author      Alex Lukyanau
+ */
+-->
 <config>
     <modules>
         <VertexSMB_TaxCE>
-            <version>1.0.0</version>
+            <version>1.1.5</version>
         </VertexSMB_TaxCE>
     </modules> 
-    <global>
+	<global>
            <blocks>
                <taxce>
                    <class>VertexSMB_TaxCE_Block</class>
@@ -29,16 +36,16 @@
                <taxce_resource>
                    <class>VertexSMB_TaxCE_Model_Resource</class>
                    <entities>
-                         <taxrequest>
-                             <table>taxce_taxrequest</table>
-                         </taxrequest>                  
+	                   <taxrequest>
+	                       <table>vertexsmb_taxrequest</table>
+	                   </taxrequest>                  
                    </entities>                      
                </taxce_resource>                                        
            </models>  
            <helpers>
-                   <taxce>
-                           <class>VertexSMB_TaxCE_Helper</class>        		
-                   </taxce>
+				<taxce>
+					<class>VertexSMB_TaxCE_Helper</class>        		
+				</taxce>
            </helpers> 
            <resources>
                <taxce_setup>
@@ -62,48 +69,48 @@
                </taxce_read>
           </resources>  
         <events>
-           <sales_order_invoice_save_after>
-             <observers>
-               <taxce_invoice_created_observer>
-                 <type>singleton</type>
-                 <class>VertexSMB_TaxCE_Model_Observer</class>
-                 <method>InvoiceCreated</method>
-               </taxce_invoice_created_observer>
-              </observers>
-            </sales_order_invoice_save_after>
-            <sales_order_save_after>
-             <observers>
-               <taxce_order_saved_observer>
-                 <type>singleton</type>
-                 <class>VertexSMB_TaxCE_Model_Observer</class>
-                 <method>OrderSaved</method>
-               </taxce_order_saved_observer>
-              </observers>                
-            </sales_order_save_after>
+			<sales_order_invoice_save_after>
+				<observers>
+					<vertexsmb_invoice_created_observer>
+						<type>singleton</type>
+						<class>VertexSMB_TaxCE_Model_Observer</class>
+						<method>InvoiceCreated</method>
+					</vertexsmb_invoice_created_observer>
+				</observers>
+			</sales_order_invoice_save_after>
+			<sales_order_save_after>
+				<observers>
+					<vertexsmb_order_saved_observer>
+						<type>singleton</type>
+						<class>VertexSMB_TaxCE_Model_Observer</class>
+						<method>OrderSaved</method>
+					</vertexsmb_order_saved_observer>
+				</observers>
+			</sales_order_save_after>
             <order_cancel_after>
                 <observers>
-                    <taxce_order_cancel_observer>
+                    <vertexsmb_order_cancel_observer>
                         <type>singleton</type>
                         <class>VertexSMB_TaxCE_Model_Observer</class>
                         <method>OrderCancelled</method>
-                    </taxce_order_cancel_observer>
+                    </vertexsmb_order_cancel_observer>
                 </observers>
             </order_cancel_after>
             <sales_order_creditmemo_refund>
                 <observers>
-                    <taxce_order_creditmemo_observer>
+                    <vertexsmb_order_creditmemo_observer>
                         <type>singleton</type>
                         <class>VertexSMB_TaxCE_Model_Observer</class>
                         <method>OrderCreditmemoRefund</method>
-                    </taxce_order_creditmemo_observer>
+                    </vertexsmb_order_creditmemo_observer>
                 </observers>
             </sales_order_creditmemo_refund>
             <adminhtml_init_system_config>
                 <observers>
-                    <taxce_init_system_config>
+                    <vertexsmb_init_system_config>
                         <class>VertexSMB_TaxCE_Model_Observer</class>
                         <method>changeSystemConfig</method>
-                    </taxce_init_system_config>
+                    </vertexsmb_init_system_config>
                 </observers>
             </adminhtml_init_system_config>         
            </events>  
@@ -114,14 +121,14 @@
                 </tax_area_id>
             </sales_convert_quote_address>
         </fieldsets>                       
-     </global> 
-    <admin>     
+	</global> 
+	<admin>     
         <routers> 
             <taxce>
                 <use>admin</use>
                 <args>
                     <module>VertexSMB_TaxCE</module>
-                    <frontName>taxce</frontName>
+                    <frontName>vertexsmb</frontName>
                 </args>
             </taxce>            
             <adminhtml>
@@ -132,52 +139,52 @@
                 </args>
             </adminhtml>
         </routers>
-       </admin> 
-       <adminhtml>
-        <layout>
-            <updates>
-                <taxce>
-                    <file>taxce.xml</file>
-                </taxce>
-            </updates>
-        </layout>             
-       </adminhtml>
-    <frontend>
-        <layout>
-            <updates>
-                <taxce>
-                        <file>taxce.xml</file>
-                </taxce>
-            </updates>
-        </layout>        
-        <routers>    
-            <checkout>
-                <args>
-                    <modules>
-                        <VertexSMB_TaxCE before="Mage_Checkout">VertexSMB_TaxCE</VertexSMB_TaxCE>
-                    </modules>
-                </args>
-            </checkout>                 
-            <taxce>
-                <use>standard</use>
-                <args>
-                    <module>VertexSMB_TaxCE</module>
-                    <frontName>taxce</frontName>
-                </args>
-            </taxce>
-        </routers>
-    </frontend>            
+	</admin> 
+	<adminhtml>
+	        <layout>
+	            <updates>
+	                <taxce>
+	                    <file>vertexsmb.xml</file>
+	                </taxce>
+	            </updates>
+	        </layout>             
+	</adminhtml>
+	<frontend>
+		<layout>
+			<updates>
+				<taxce>
+					<file>vertexsmb.xml</file>
+				</taxce>
+			</updates>
+		</layout>
+		<routers>
+			<checkout>
+				<args>
+					<modules>
+						<VertexSMB_TaxCE before="Mage_Checkout">VertexSMB_TaxCE</VertexSMB_TaxCE>
+					</modules>
+				</args>
+			</checkout>
+			<taxce>
+				<use>standard</use>
+				<args>
+					<module>VertexSMB_TaxCE</module>
+					<frontName>vertexsmb</frontName>
+				</args>
+			</taxce>
+		</routers>
+	</frontend>            
     <default>
         <tax> 
-            <taxce_settings>
-                <enable_taxce><![CDATA[0]]></enable_taxce>
+            <vertexsmb_settings>
+                <enable_vertexsmb><![CDATA[0]]></enable_vertexsmb>
                 <trustedId><![CDATA[]]></trustedId>               
                 <invoice_order><![CDATA[invoice_created]]></invoice_order>   
                 <api_url><![CDATA[]]></api_url>  
-                <address_api_url><![CDATA[]]></address_api_url>    
+                <address_api_url><![CDATA[]]></address_api_url>  
                 <show_manual_button><![CDATA[0]]></show_manual_button> 
                 <show_tarequest_popup><![CDATA[1]]></show_tarequest_popup>    
-            </taxce_settings>
+            </vertexsmb_settings>
             <classes>     
                 <default_customer_code><![CDATA[General]]></default_customer_code>
                 <creditmemo_adjustment_negative_code><![CDATA[adjustment-negative]]></creditmemo_adjustment_negative_code>
@@ -190,14 +197,14 @@
     </default>
     <crontab>
         <jobs>
-            <taxce_log_cleanup>
+            <vertexsmb_log_cleanup>
                 <schedule>
                     <cron_expr>00 2 * * *</cron_expr>
                 </schedule>
                 <run>
                     <model>taxce/observer::CleanLogs</model>
                 </run>
-            </taxce_log_cleanup>
+            </vertexsmb_log_cleanup>
         </jobs>
     </crontab>    
 </config>
