@@ -1,16 +1,19 @@
 {
-    "name": "OpenMageModuleFostering/VertexSMB_TaxCE",
+    "name": "OpenMageModuleFostering\/VertexSMB_TaxCE",
     "type": "magento-module",
     "license": "OSL-3.0",
     "homepage": "",
     "description": "Sales and Use Tax Automation",
     "authors": [
-    {
-        "name": "Vertex SMB",
-        "email": "support@vertexSMB.com"
-    }
-],
+        {
+            "name": "Vertex SMB",
+            "email": "support@vertexSMB.com"
+        }
+    ],
     "suggest": {
-        "magento-hackathon/magento-composer-installer": "*"
-    }
+        "magento-hackathon\/magento-composer-installer": "*"
+    },
+    "keywords": [
+        "openmage-module"
+    ]
 }
